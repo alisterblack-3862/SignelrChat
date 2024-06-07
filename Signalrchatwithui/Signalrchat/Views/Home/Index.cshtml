@@ -1,0 +1,79 @@
+﻿@using Microsoft.AspNetCore.Http;
+ @inject IHttpContextAccessor Accessor 
+@{
+    ViewData["Title"] = "Home Page";
+    var UserName = Accessor.HttpContext.Session.GetString("UserName");
+}
+
+     <style>
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .chat-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .chat-box {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            height: 400px;
+            overflow-y: scroll;
+        }
+        .chat-input {
+            display: flex;
+            margin-top: 10px;
+        }
+        .chat-input input[type="text"] {
+            flex: 1;
+            margin-right: 10px;
+        }
+        .chat-message {
+            margin-bottom: 10px;
+        }
+        .chat-message b {
+            color: #007bff;
+        }
+    </style>
+<div class="container chat-container">
+    <h2 class="chat-header">Chat</h2>
+    <div class="chat-box" id="discussion"></div>
+    <div class="chat-input">
+        <input type="text" id="displayname" class="form-control" placeholder="Your Name" />
+        <input type="text" id="message" class="form-control" placeholder="Your Message" />
+        <input type="button" id="sendmessage" class="btn btn-primary" value="Send" />
+    </div>
+</div>
+<script src="~/lib/microsoft/signalr/dist/browser/signalr.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script>
+        var connection = new signalR.HubConnectionBuilder().withUrl("/ChatHub").build();
+
+        document.getElementById("sendmessage").disabled = true;
+
+        connection.on("ReciveMessage", function (user, message,sendAt) {
+            var li = document.createElement("li");
+            document.getElementById("discussion").appendChild(li);
+        li.innerHTML = `<b>${sendAt} ${user} </b> : ${message}`;
+        });
+
+        connection.start().then(function () {
+            document.getElementById("sendmessage").disabled = false;
+        }).catch(function (err) {
+            return console.error(err.toString());
+        });
+
+        document.getElementById("sendmessage").addEventListener("click", function (event) {
+            var user = document.getElementById("displayname").value;
+            var message = document.getElementById("message").value;
+            if (message.trim() !== '' && user.trim() !== '') {
+                connection.invoke("SendMessage", user, message).catch(function (err) {
+                    console.error(err.toString());
+                });
+            }
+            event.preventDefault();
+        });
+
+</script>
